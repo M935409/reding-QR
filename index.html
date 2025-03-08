@@ -14,6 +14,7 @@
             align-items: center; 
             height: 100vh; 
             margin: 0; 
+            flex-direction: column;
         }
         .container { 
             background: #fdfdfd; 
@@ -111,6 +112,15 @@
                 padding: 10px 18px; 
             }
         }
+
+        /* تنسيق التوقيع */
+        .signature {
+            margin-top: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #007bff;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -127,76 +137,79 @@
         <button onclick="reset()">مسح</button>
     </div>
 
+    <div class="signature">
+        <p>Muhab Tarig : تصميم</p>
+    </div>
+
     <script>
        function scanBarcode(event) {
-    let file = event.target.files[0];
-    if (!file) return;
+            let file = event.target.files[0];
+            if (!file) return;
 
-    let reader = new FileReader();
-    reader.onload = function () {
-        let img = new Image();
-        img.onload = function () {
-            let canvas = document.getElementById('canvas');
-            let ctx = canvas.getContext('2d');
+            let reader = new FileReader();
+            reader.onload = function () {
+                let img = new Image();
+                img.onload = function () {
+                    let canvas = document.getElementById('canvas');
+                    let ctx = canvas.getContext('2d');
 
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0, img.width, img.height);
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0, img.width, img.height);
 
-            let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            let code = jsQR(imageData.data, canvas.width, canvas.height);
+                    let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    let code = jsQR(imageData.data, canvas.width, canvas.height);
 
-            let resultBox = document.getElementById('result');
-            let actionButtons = document.getElementById('actionButtons');
-            if (code) {
-                let data = code.data;
-                resultBox.style.display = 'block';
+                    let resultBox = document.getElementById('result');
+                    let actionButtons = document.getElementById('actionButtons');
+                    if (code) {
+                        let data = code.data;
+                        resultBox.style.display = 'block';
 
-                // فحص إذا كان النص يحتوي على أحرف فقط (اسم محتمل)
-                if (/^[a-zA-Z\s]+$/.test(data)) {
-                    resultBox.innerHTML = "👤 تم التعرف على اسم: " + data;
-                    resultBox.className = "result-box success";
-                    actionButtons.style.display = 'none';
-                } else if (isEmail(data)) {
-                    resultBox.innerHTML = "📧 تم التعرف على بريد إلكتروني: " + data;
-                    resultBox.className = "result-box success";
-                    actionButtons.style.display = 'block';
-                    actionButtons.innerHTML = `
-                        <button onclick="openMailApp('${data}')">إرسال بريد</button>
-                        <button onclick="copyToClipboard('${data}')">نسخ البريد</button>
-                    `;
-                } else if (isPhoneNumber(data)) {
-                    resultBox.innerHTML = "📞 تم التعرف على رقم هاتف: " + data;
-                    resultBox.className = "result-box success";
-                    actionButtons.style.display = 'block';
-                    actionButtons.innerHTML = `
-                        <button onclick="callPhoneNumber('${data}')">اتصال</button>
-                        <button onclick="openWhatsapp('${data}')">فتح في واتساب</button>
-                        <button onclick="copyToClipboard('${data}')">نسخ الرقم</button>
-                    `;
-                } else if (isURL(data)) {
-                    resultBox.innerHTML = "🌐 تم التعرف على رابط: " + data;
-                    resultBox.className = "result-box success";
-                    actionButtons.style.display = 'block';
-                    actionButtons.innerHTML = `
-                        <button onclick="openInBrowser('${data}')">فتح الرابط</button>
-                        <button onclick="copyToClipboard('${data}')">نسخ الرابط</button>
-                    `;
-                } else {
-                    resultBox.innerHTML = "📦 الباركود: " + data;
-                    resultBox.className = "result-box success";
-                }
-            } else {
-                resultBox.innerText = "❌ لم يتم التعرف على الباركود، جرب صورة أخرى!";
-                resultBox.className = "result-box error";
-                actionButtons.style.display = 'none';
-            }
-        };
-        img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-}
-
+                        // فحص إذا كان النص يحتوي على أحرف فقط (اسم محتمل)
+                        if (/^[a-zA-Z\s]+$/.test(data)) {
+                            resultBox.innerHTML = "👤 تم التعرف على اسم: " + data;
+                            resultBox.className = "result-box success";
+                            actionButtons.style.display = 'none';
+                        } else if (isEmail(data)) {
+                            resultBox.innerHTML = "📧 تم التعرف على بريد إلكتروني: " + data;
+                            resultBox.className = "result-box success";
+                            actionButtons.style.display = 'block';
+                            actionButtons.innerHTML = `
+                                <button onclick="openMailApp('${data}')">إرسال بريد</button>
+                                <button onclick="copyToClipboard('${data}')">نسخ البريد</button>
+                            `;
+                        } else if (isPhoneNumber(data)) {
+                            resultBox.innerHTML = "📞 تم التعرف على رقم هاتف: " + data;
+                            resultBox.className = "result-box success";
+                            actionButtons.style.display = 'block';
+                            actionButtons.innerHTML = `
+                                <button onclick="callPhoneNumber('${data}')">اتصال</button>
+                                <button onclick="openWhatsapp('${data}')">فتح في واتساب</button>
+                                <button onclick="copyToClipboard('${data}')">نسخ الرقم</button>
+                            `;
+                        } else if (isURL(data)) {
+                            resultBox.innerHTML = "🌐 تم التعرف على رابط: " + data;
+                            resultBox.className = "result-box success";
+                            actionButtons.style.display = 'block';
+                            actionButtons.innerHTML = `
+                                <button onclick="openInBrowser('${data}')">فتح الرابط</button>
+                                <button onclick="copyToClipboard('${data}')">نسخ الرابط</button>
+                            `;
+                        } else {
+                            resultBox.innerHTML = "📦 الباركود: " + data;
+                            resultBox.className = "result-box success";
+                        }
+                    } else {
+                        resultBox.innerText = "❌ لم يتم التعرف على الباركود، جرب صورة أخرى!";
+                        resultBox.className = "result-box error";
+                        actionButtons.style.display = 'none';
+                    }
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        }
 
         function reset() {
             document.getElementById('result').style.display = 'none';
