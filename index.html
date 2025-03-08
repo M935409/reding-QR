@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قارئ الباركود</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@latest/dist/jsQR.js"></script>
+    <style>
+        body { 
+            font-family: 'Arial', sans-serif; 
+            background-color: #4d3737; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .container { 
+            background: #fdfdfd; 
+            padding: 40px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); 
+            text-align: center; 
+            max-width: 500px; 
+            width: 100%; 
+        }
+        h2 { 
+            color: #007bff; 
+            margin-bottom: 30px; 
+            font-size: 28px; 
+        }
+        input[type="file"] { 
+            margin: 20px 0; 
+            padding: 15px; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        input[type="file"]:hover { 
+            background-color: #0056b3; 
+        }
+        .result-box { 
+            background: #e9f7fd; 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-top: 30px; 
+            font-size: 18px; 
+            font-weight: bold; 
+            color: #007bff; 
+            display: none; 
+            transition: all 0.3s ease-in-out;
+        }
+        .result-box.success { 
+            background: #d4edda; 
+            color: #155724; 
+        }
+        .result-box.error { 
+            background: #f8d7da; 
+            color: #721c24; 
+        }
+        button { 
+            margin-top: 20px; 
+            padding: 12px 20px; 
+            border: none; 
+            background-color: #28a745; 
+            color: rgb(255, 255, 255); 
+            font-size: 16px; 
+            border-radius: 8px; 
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover { 
+            background-color: #218838; 
+        }
+        .action-buttons { 
+            margin-top: 20px; 
+            display: flex; 
+            justify-content: space-around; 
+            flex-wrap: wrap;
+        }
+        .action-buttons button {
+            padding: 8px 15px; 
+            background-color: #17a2b8; 
+            color: rgb(255, 255, 255); 
+            font-size: 14px; 
+            border: none; 
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+        .action-buttons button:hover { 
+            background-color: #138496; 
+        }
+        @media (max-width: 500px) {
+            .container { 
+                padding: 20px; 
+            }
+            h2 { 
+                font-size: 24px; 
+            }
+            input[type="file"] { 
+                font-size: 14px; 
+            }
+            button { 
+                font-size: 14px; 
+                padding: 10px 18px; 
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>📷 قارئ الباركود</h2>
+        <input type="file" accept="image/*" onchange="scanBarcode(event)">
+        <canvas id="canvas" style="display:none;"></canvas>
+
+        <div id="result" class="result-box"></div>
+        
+        <div id="actionButtons" class="action-buttons" style="display:none;"></div>
+
+        <button onclick="reset()">مسح</button>
+    </div>
+
+    <script>
+       function scanBarcode(event) {
+    let file = event.target.files[0];
+    if (!file) return;
+
+    let reader = new FileReader();
+    reader.onload = function () {
+        let img = new Image();
+        img.onload = function () {
+            let canvas = document.getElementById('canvas');
+            let ctx = canvas.getContext('2d');
+
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0, img.width, img.height);
+
+            let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let code = jsQR(imageData.data, canvas.width, canvas.height);
+
+            let resultBox = document.getElementById('result');
+            let actionButtons = document.getElementById('actionButtons');
+            if (code) {
+                let data = code.data;
+                resultBox.style.display = 'block';
+
+                // فحص إذا كان النص يحتوي على أحرف فقط (اسم محتمل)
+                if (/^[a-zA-Z\s]+$/.test(data)) {
+                    resultBox.innerHTML = "👤 تم التعرف على اسم: " + data;
+                    resultBox.className = "result-box success";
+                    actionButtons.style.display = 'none';
+                } else if (isEmail(data)) {
+                    resultBox.innerHTML = "📧 تم التعرف على بريد إلكتروني: " + data;
+                    resultBox.className = "result-box success";
+                    actionButtons.style.display = 'block';
+                    actionButtons.innerHTML = `
+                        <button onclick="openMailApp('${data}')">إرسال بريد</button>
+                        <button onclick="copyToClipboard('${data}')">نسخ البريد</button>
+                    `;
+                } else if (isPhoneNumber(data)) {
+                    resultBox.innerHTML = "📞 تم التعرف على رقم هاتف: " + data;
+                    resultBox.className = "result-box success";
+                    actionButtons.style.display = 'block';
+                    actionButtons.innerHTML = `
+                        <button onclick="callPhoneNumber('${data}')">اتصال</button>
+                        <button onclick="openWhatsapp('${data}')">فتح في واتساب</button>
+                        <button onclick="copyToClipboard('${data}')">نسخ الرقم</button>
+                    `;
+                } else if (isURL(data)) {
+                    resultBox.innerHTML = "🌐 تم التعرف على رابط: " + data;
+                    resultBox.className = "result-box success";
+                    actionButtons.style.display = 'block';
+                    actionButtons.innerHTML = `
+                        <button onclick="openInBrowser('${data}')">فتح الرابط</button>
+                        <button onclick="copyToClipboard('${data}')">نسخ الرابط</button>
+                    `;
+                } else {
+                    resultBox.innerHTML = "📦 الباركود: " + data;
+                    resultBox.className = "result-box success";
+                }
+            } else {
+                resultBox.innerText = "❌ لم يتم التعرف على الباركود، جرب صورة أخرى!";
+                resultBox.className = "result-box error";
+                actionButtons.style.display = 'none';
+            }
+        };
+        img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+
+        function reset() {
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('actionButtons').style.display = 'none';
+            document.querySelector('input[type="file"]').value = '';
+        }
+
+        function isEmail(data) {
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            return emailPattern.test(data);
+        }
+
+        function isPhoneNumber(data) {
+            const phonePattern = /^[0-9]{10}$/;
+            return phonePattern.test(data);
+        }
+
+        function isURL(data) {
+            const urlPattern = /^(https?:\/\/[^\s]+)/;
+            return urlPattern.test(data);
+        }
+
+        function openMailApp(data) {
+            window.location.href = 'mailto:' + data;
+        }
+
+        function callPhoneNumber(data) {
+            window.location.href = 'tel:' + data;
+        }
+
+        function openWhatsapp(data) {
+            window.location.href = 'https://wa.me/' + data;
+        }
+
+        function openInBrowser(data) {
+            window.open(data, '_blank');
+        }
+
+        function copyToClipboard(data) {
+            navigator.clipboard.writeText(data).then(() => {
+                alert('تم نسخ البيانات!');
+            });
+        }
+    </script>
+
+</body>
+</html>
